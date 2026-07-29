@@ -170,19 +170,35 @@ ${request.text}`,
     responseSchema: Record<string, unknown>,
     validator: { parse(value: unknown): T }
   ): Promise<T> {
-    const response = await this.client.models.generateContent({
-      model: this.environment.GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseJsonSchema: responseSchema,
-        maxOutputTokens: 1_200,
-        abortSignal: AbortSignal.timeout(this.environment.REQUEST_TIMEOUT_MS)
+    let lastFailure: Error | undefined
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const response = await this.client.models.generateContent({
+        model: this.environment.GEMINI_MODEL,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseJsonSchema: responseSchema,
+          maxOutputTokens: 4_096,
+          abortSignal: AbortSignal.timeout(this.environment.REQUEST_TIMEOUT_MS)
+        }
+      })
+      if (!response.text) {
+        lastFailure = new Error('Gemini returned an empty response')
+        continue
       }
-    })
-    if (!response.text) {
-      throw new Error('Gemini returned an empty response')
+
+      try {
+        return validator.parse(JSON.parse(response.text))
+      } catch (error) {
+        const finishReason = response.candidates?.[0]?.finishReason ?? 'unknown'
+        const message = error instanceof Error ? error.message : 'Unknown parsing error'
+        lastFailure = new Error(
+          `Gemini returned invalid structured JSON (finish reason: ${finishReason}): ${message}`
+        )
+      }
     }
-    return validator.parse(JSON.parse(response.text))
+
+    throw lastFailure ?? new Error('Gemini could not produce a structured response')
   }
 }
