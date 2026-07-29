@@ -176,7 +176,6 @@ ${request.text}`,
       config: {
         responseMimeType: 'application/json',
         responseJsonSchema: responseSchema,
-        temperature: 0.2,
         maxOutputTokens: 1_200,
         abortSignal: AbortSignal.timeout(this.environment.REQUEST_TIMEOUT_MS)
       }
