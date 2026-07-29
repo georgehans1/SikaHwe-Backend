@@ -53,15 +53,25 @@ export async function createApp(environment: Environment): Promise<FastifyInstan
       })
     }
 
+    const normalizedError = error instanceof Error
+      ? error
+      : new Error('Unknown backend error')
+    const statusCode = (
+      typeof error === 'object' &&
+      error !== null &&
+      'statusCode' in error &&
+      typeof error.statusCode === 'number' &&
+      error.statusCode >= 400
+    )
+      ? error.statusCode
+      : 502
+
     request.log.error({
-      errorName: error.name,
-      errorMessage: error.message,
+      errorName: normalizedError.name,
+      errorMessage: normalizedError.message,
       requestID: request.id
     }, 'Request failed')
 
-    const statusCode = error.statusCode && error.statusCode >= 400
-      ? error.statusCode
-      : 502
     return reply.status(statusCode).send({
       success: false,
       error: statusCode === 429
