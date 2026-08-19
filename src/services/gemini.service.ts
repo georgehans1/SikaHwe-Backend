@@ -233,30 +233,28 @@ ${JSON.stringify(request)}`,
         properties: {
           merchant: { type: 'string' },
           transactionDate: { type: 'string' },
-          totalMinor: { type: 'integer', minimum: 0 },
-          subtotalMinor: { type: 'integer', minimum: 0 },
-          taxMinor: { type: 'integer', minimum: 0 },
-          feeMinor: { type: 'integer', minimum: 0 },
-          discountMinor: { type: 'integer', minimum: 0 },
+          totalMinor: { type: 'integer' },
+          subtotalMinor: { type: 'integer' },
+          taxMinor: { type: 'integer' },
+          feeMinor: { type: 'integer' },
+          discountMinor: { type: 'integer' },
           currencyCode: { type: 'string' },
           lineItems: {
             type: 'array',
-            maxItems: 100,
             items: {
               type: 'object',
               properties: {
                 description: { type: 'string' },
-                quantity: { type: 'number', minimum: 0 },
-                amountMinor: { type: 'integer', minimum: 0 }
+                quantity: { type: 'number' },
+                amountMinor: { type: 'integer' }
               },
               required: ['description', 'amountMinor']
             }
           },
-          confidence: { type: 'number', minimum: 0, maximum: 1 },
+          confidence: { type: 'number' },
           fieldsRequiringReview: {
             type: 'array',
-            items: { type: 'string' },
-            maxItems: 20
+            items: { type: 'string' }
           }
         },
         required: [
