@@ -68,7 +68,11 @@ export async function registerAIRoutes(
       text: redactSensitiveText(input.text),
       blocks: input.blocks.map((block) => ({
         ...block,
-        text: redactSensitiveText(block.text)
+        text: redactSensitiveText(block.text),
+        x: Math.min(Math.max(block.x, 0), 1),
+        y: Math.min(Math.max(block.y, 0), 1),
+        width: Math.min(Math.max(block.width, 0), 1),
+        height: Math.min(Math.max(block.height, 0), 1)
       }))
     })
     return { success: true, data }

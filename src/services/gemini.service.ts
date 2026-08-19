@@ -222,7 +222,7 @@ ${JSON.stringify(request)}`,
       `Extract the purchase details from one receipt using only the supplied on-device OCR text and layout blocks.
 Never invent a merchant, date, amount, adjustment, or line item. Amounts must be nonnegative integer minor currency units. Use ISO 8601 for transactionDate when a date is visible. Return a three-letter uppercase currencyCode, defaulting to GHS only when the receipt uses Ghana cedi notation.
 
-For each line item, amountMinor is that line's full amount after quantity, not a unit price. taxMinor, feeMinor, and discountMinor must be zero when absent. When OCR contains every line, the values should satisfy exactly:
+For each line item, amountMinor is that line's full amount after quantity, not a unit price. If quantity is returned, it must be greater than zero. taxMinor, feeMinor, and discountMinor must be zero when absent. When OCR contains every line, the values should satisfy exactly:
 sum(lineItems.amountMinor) + taxMinor + feeMinor - discountMinor = totalMinor.
 If OCR is incomplete, preserve the known total, return only defensible line items, allow that equation not to balance, and include lineItems in fieldsRequiringReview. Never fabricate a balancing item. subtotalMinor is optional and must only be returned when printed on the receipt. Confidence is from 0 to 1.
 
@@ -246,7 +246,7 @@ ${JSON.stringify(request)}`,
               type: 'object',
               properties: {
                 description: { type: 'string' },
-                quantity: { type: 'number', exclusiveMinimum: 0 },
+                quantity: { type: 'number', minimum: 0 },
                 amountMinor: { type: 'integer', minimum: 0 }
               },
               required: ['description', 'amountMinor']

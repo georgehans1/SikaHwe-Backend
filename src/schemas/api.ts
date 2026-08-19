@@ -136,10 +136,12 @@ export const askInterpretResponseSchema = z.object({
 
 export const receiptTextBlockSchema = z.object({
   text: z.string().trim().min(1).max(500),
-  x: z.number().finite().min(0).max(1),
-  y: z.number().finite().min(0).max(1),
-  width: z.number().finite().min(0).max(1),
-  height: z.number().finite().min(0).max(1)
+  // Vision normally produces normalized coordinates, but edge detections can
+  // exceed 0...1 by tiny floating-point amounts. Normalize at the route edge.
+  x: z.number().finite(),
+  y: z.number().finite(),
+  width: z.number().finite(),
+  height: z.number().finite()
 })
 
 export const receiptParseRequestSchema = z.object({
