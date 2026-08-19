@@ -24,12 +24,9 @@ export async function createApp(environment: Environment): Promise<FastifyInstan
   await app.register(rateLimit, {
     max: environment.RATE_LIMIT_MAX,
     timeWindow: environment.RATE_LIMIT_WINDOW_MS,
-    keyGenerator: (request) => {
-      const installationID = request.headers['x-sikahwe-installation-id']
-      return typeof installationID === 'string' && installationID.length <= 100
-        ? `${request.ip}:${installationID}`
-        : request.ip
-    }
+    // The installation header is caller-controlled until App Attest is added.
+    // Keying the public ceiling by IP prevents rotating that header to bypass it.
+    keyGenerator: (request) => request.ip
   })
 
   app.get('/health', async () => ({

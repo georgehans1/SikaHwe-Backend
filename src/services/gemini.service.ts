@@ -1,9 +1,15 @@
 import { GoogleGenAI } from '@google/genai'
 import type { Environment } from '../config/environment.js'
 import {
+  type AskInterpretRequest,
+  type AskInterpretResponse,
+  askInterpretResponseSchema,
   type CategorizationRequest,
   type CategorizationResponse,
   categorizationResponseSchema,
+  type ReceiptParseRequest,
+  type ReceiptParseResponse,
+  receiptParseResponseSchema,
   type StatisticsInsightsRequest,
   type StatisticsInsightsResponse,
   statisticsInsightsResponseSchema,
@@ -164,6 +170,121 @@ ${request.text}`,
       },
       transactionParseResponseSchema
     )
+  }
+
+  async interpretQuestion(request: AskInterpretRequest): Promise<AskInterpretResponse> {
+    const result = await this.generateStructured(
+      `Translate one user question into a supported local SikaHwe query operation.
+The iOS app will execute the query and calculate every financial value locally. You must not answer the financial question, calculate money, or invent transaction data.
+Choose exactly one operation from supportedOperations.
+
+Operation guidance:
+- total_spend: total or average spending and expense count
+- top_categories: category ranking
+- top_purchases: purchased item or purchase-description ranking
+- top_merchants: merchant or payee ranking
+- categories_over_allocation: monthly categories above allocation
+- largest_expenses: largest individual transactions
+- repeated_merchants: merchants paid more than once
+- find_transactions: locate a named merchant, purchase, category, or text; include a concise searchTerm
+- compare_previous_budget: compare the selected monthly budget with the previous monthly plan
+- explain_available_to_allocate: explain the monthly planning buffer
+
+If the question is ambiguous, choose the closest safe operation, lower confidence, and provide a concise clarification. Use a result limit from 1 to 12.
+
+DATA:
+${JSON.stringify(request)}`,
+      {
+        type: 'object',
+        properties: {
+          operation: {
+            type: 'string',
+            enum: request.supportedOperations
+          },
+          searchTerm: { type: 'string' },
+          limit: { type: 'integer', minimum: 1, maximum: 12 },
+          confidence: { type: 'number', minimum: 0, maximum: 1 },
+          clarification: { type: 'string' }
+        },
+        required: ['operation', 'limit', 'confidence']
+      },
+      askInterpretResponseSchema
+    )
+
+    if (!request.supportedOperations.includes(result.operation)) {
+      throw new Error('Gemini selected an unsupported Ask SikaHwe operation')
+    }
+    return result
+  }
+
+  async parseReceipt(request: ReceiptParseRequest): Promise<ReceiptParseResponse> {
+    const result = await this.generateStructured(
+      `Extract the purchase details from one receipt using only the supplied on-device OCR text and layout blocks.
+Never invent a merchant, date, amount, adjustment, or line item. Amounts must be nonnegative integer minor currency units. Use ISO 8601 for transactionDate when a date is visible. Return a three-letter uppercase currencyCode, defaulting to GHS only when the receipt uses Ghana cedi notation.
+
+For each line item, amountMinor is that line's full amount after quantity, not a unit price. taxMinor, feeMinor, and discountMinor must be zero when absent. When OCR contains every line, the values should satisfy exactly:
+sum(lineItems.amountMinor) + taxMinor + feeMinor - discountMinor = totalMinor.
+If OCR is incomplete, preserve the known total, return only defensible line items, allow that equation not to balance, and include lineItems in fieldsRequiringReview. Never fabricate a balancing item. subtotalMinor is optional and must only be returned when printed on the receipt. Confidence is from 0 to 1.
+
+OCR DATA:
+${JSON.stringify(request)}`,
+      {
+        type: 'object',
+        properties: {
+          merchant: { type: 'string' },
+          transactionDate: { type: 'string' },
+          totalMinor: { type: 'integer', minimum: 0 },
+          subtotalMinor: { type: 'integer', minimum: 0 },
+          taxMinor: { type: 'integer', minimum: 0 },
+          feeMinor: { type: 'integer', minimum: 0 },
+          discountMinor: { type: 'integer', minimum: 0 },
+          currencyCode: { type: 'string' },
+          lineItems: {
+            type: 'array',
+            maxItems: 100,
+            items: {
+              type: 'object',
+              properties: {
+                description: { type: 'string' },
+                quantity: { type: 'number', exclusiveMinimum: 0 },
+                amountMinor: { type: 'integer', minimum: 0 }
+              },
+              required: ['description', 'amountMinor']
+            }
+          },
+          confidence: { type: 'number', minimum: 0, maximum: 1 },
+          fieldsRequiringReview: {
+            type: 'array',
+            items: { type: 'string' },
+            maxItems: 20
+          }
+        },
+        required: [
+          'totalMinor',
+          'taxMinor',
+          'feeMinor',
+          'discountMinor',
+          'currencyCode',
+          'lineItems',
+          'confidence',
+          'fieldsRequiringReview'
+        ]
+      },
+      receiptParseResponseSchema
+    )
+
+    const reconciledTotal = result.lineItems.reduce(
+      (sum, item) => sum + item.amountMinor,
+      0
+    ) + result.taxMinor + result.feeMinor - result.discountMinor
+    const fieldsRequiringReview = reconciledTotal === result.totalMinor
+      ? result.fieldsRequiringReview
+      : Array.from(new Set([...result.fieldsRequiringReview, 'lineItems']))
+    return {
+      ...result,
+      currencyCode: result.currencyCode.toUpperCase(),
+      fieldsRequiringReview
+    }
   }
 
   private async generateStructured<T>(

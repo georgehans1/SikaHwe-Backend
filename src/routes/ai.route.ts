@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify'
 import type { GeminiService } from '../services/gemini.service.js'
 import {
+  askInterpretRequestSchema,
   categorizationRequestSchema,
+  receiptParseRequestSchema,
   statisticsInsightsRequestSchema,
   transactionParseRequestSchema
 } from '../schemas/api.js'
@@ -45,6 +47,29 @@ export async function registerAIRoutes(
     const data = await dependencies.geminiService.parseTransaction({
       ...input,
       text: redactSensitiveText(input.text)
+    })
+    return { success: true, data }
+  })
+
+  app.post('/v1/ai/ask/interpret', async (request) => {
+    const input = askInterpretRequestSchema.parse(request.body)
+    const data = await dependencies.geminiService.interpretQuestion({
+      ...input,
+      question: redactSensitiveText(input.question),
+      scopeTitle: redactSensitiveText(input.scopeTitle),
+      availableCategories: input.availableCategories.map(redactSensitiveText)
+    })
+    return { success: true, data }
+  })
+
+  app.post('/v1/ai/parse-receipt', async (request) => {
+    const input = receiptParseRequestSchema.parse(request.body)
+    const data = await dependencies.geminiService.parseReceipt({
+      text: redactSensitiveText(input.text),
+      blocks: input.blocks.map((block) => ({
+        ...block,
+        text: redactSensitiveText(block.text)
+      }))
     })
     return { success: true, data }
   })

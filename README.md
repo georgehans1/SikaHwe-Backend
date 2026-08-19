@@ -31,6 +31,10 @@ Render supplies `PORT` automatically. The service binds to `0.0.0.0`.
 - `POST /v1/ai/statistics-insights`
 - `POST /v1/ai/categorize`
 - `POST /v1/ai/parse-transaction`
+- `POST /v1/ai/ask/interpret` — maps a question to an allowlisted operation; the
+  iOS app performs the financial query and calculations locally.
+- `POST /v1/ai/parse-receipt` — structures text produced by on-device receipt
+  OCR. Receipt images are never uploaded.
 
 Every AI response is returned as:
 
@@ -43,9 +47,13 @@ Every AI response is returned as:
 
 Request bodies are excluded from application logs. The service has no database
 and does not retain budgets, transaction messages, statistics, or model output.
+Ask SikaHwe sends only the question, scope label, and category catalogue. Receipt
+assistance sends redacted OCR text and normalized text-block coordinates.
 
 ## Production hardening
 
-The initial service rate-limits by IP and SikaHwe installation identifier.
+The initial public request ceiling is rate-limited by IP. The installation
+identifier remains available for diagnostics but is not trusted as a security
+boundary because a caller can replace it.
 Before a broad public release, add Apple App Attest verification so only genuine
 installations can use the proxy.

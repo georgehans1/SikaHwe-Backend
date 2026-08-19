@@ -97,9 +97,83 @@ export const transactionParseResponseSchema = z.object({
   ])).max(8)
 })
 
+export const askOperationSchema = z.enum([
+  'total_spend',
+  'top_categories',
+  'top_purchases',
+  'top_merchants',
+  'categories_over_allocation',
+  'largest_expenses',
+  'repeated_merchants',
+  'find_transactions',
+  'compare_previous_budget',
+  'explain_available_to_allocate'
+])
+
+export const askInterpretRequestSchema = z.object({
+  question: z.string().trim().min(2).max(500),
+  scopeTitle: z.string().trim().min(1).max(160),
+  planType: z.enum(['monthly', 'annual', 'project', 'all_data', 'unknown']),
+  availableCategories: z.array(z.string().trim().min(1).max(100)).max(100),
+  supportedOperations: z.array(askOperationSchema).min(1).max(20)
+})
+
+export const askInterpretResponseSchema = z.object({
+  operation: askOperationSchema,
+  searchTerm: z.string().trim().min(1).max(200).optional(),
+  limit: z.number().int().min(1).max(12).default(5),
+  confidence: z.number().min(0).max(1),
+  clarification: z.string().trim().min(1).max(240).optional()
+}).superRefine((value, context) => {
+  if (value.operation === 'find_transactions' && !value.searchTerm) {
+    context.addIssue({
+      code: 'custom',
+      path: ['searchTerm'],
+      message: 'searchTerm is required for find_transactions'
+    })
+  }
+})
+
+export const receiptTextBlockSchema = z.object({
+  text: z.string().trim().min(1).max(500),
+  x: z.number().finite().min(0).max(1),
+  y: z.number().finite().min(0).max(1),
+  width: z.number().finite().min(0).max(1),
+  height: z.number().finite().min(0).max(1)
+})
+
+export const receiptParseRequestSchema = z.object({
+  text: z.string().trim().min(1).max(12_000),
+  blocks: z.array(receiptTextBlockSchema).max(300)
+})
+
+export const receiptLineItemSchema = z.object({
+  description: z.string().trim().min(1).max(300),
+  quantity: z.number().finite().positive().max(10_000).optional(),
+  amountMinor: moneyMinor
+})
+
+export const receiptParseResponseSchema = z.object({
+  merchant: z.string().trim().min(1).max(240).optional(),
+  transactionDate: z.string().trim().min(10).max(35).optional(),
+  totalMinor: moneyMinor,
+  subtotalMinor: moneyMinor.optional(),
+  taxMinor: moneyMinor,
+  feeMinor: moneyMinor,
+  discountMinor: moneyMinor,
+  currencyCode: z.string().trim().length(3),
+  lineItems: z.array(receiptLineItemSchema).max(100),
+  confidence: z.number().min(0).max(1),
+  fieldsRequiringReview: z.array(z.string().trim().min(1).max(100)).max(20)
+})
+
 export type StatisticsInsightsRequest = z.infer<typeof statisticsInsightsRequestSchema>
 export type StatisticsInsightsResponse = z.infer<typeof statisticsInsightsResponseSchema>
 export type CategorizationRequest = z.infer<typeof categorizationRequestSchema>
 export type CategorizationResponse = z.infer<typeof categorizationResponseSchema>
 export type TransactionParseRequest = z.infer<typeof transactionParseRequestSchema>
 export type TransactionParseResponse = z.infer<typeof transactionParseResponseSchema>
+export type AskInterpretRequest = z.infer<typeof askInterpretRequestSchema>
+export type AskInterpretResponse = z.infer<typeof askInterpretResponseSchema>
+export type ReceiptParseRequest = z.infer<typeof receiptParseRequestSchema>
+export type ReceiptParseResponse = z.infer<typeof receiptParseResponseSchema>

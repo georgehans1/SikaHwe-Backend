@@ -9,7 +9,7 @@ const environmentSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
   REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
-  MAX_REQUEST_BYTES: z.coerce.number().int().positive().default(32_768)
+  MAX_REQUEST_BYTES: z.coerce.number().int().positive().default(65_536)
 })
 
 export type Environment = z.infer<typeof environmentSchema>
