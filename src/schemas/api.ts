@@ -107,7 +107,15 @@ export const askOperationSchema = z.enum([
   'repeated_merchants',
   'find_transactions',
   'compare_previous_budget',
-  'explain_available_to_allocate'
+  'explain_available_to_allocate',
+  'remaining_budget',
+  'budget_forecast',
+  'allocation_accuracy',
+  'uncategorized_expenses',
+  'outside_budget_period',
+  'likely_duplicates',
+  'outstanding_commitments',
+  'close_monthly_budget'
 ])
 
 export const askInterpretRequestSchema = z.object({

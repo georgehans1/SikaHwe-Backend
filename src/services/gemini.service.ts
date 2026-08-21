@@ -189,6 +189,14 @@ Operation guidance:
 - find_transactions: locate a named merchant, purchase, category, or text; include a concise searchTerm
 - compare_previous_budget: compare the selected monthly budget with the previous monthly plan
 - explain_available_to_allocate: explain the monthly planning buffer
+- remaining_budget: total budget minus actual spending for the selected monthly plan
+- budget_forecast: estimate whether the selected monthly plan is likely to exceed its budget
+- allocation_accuracy: compare category allocations with their actual spending
+- uncategorized_expenses: find expenses that still need a category
+- outside_budget_period: find expenses assigned outside the selected monthly plan's configured spending dates
+- likely_duplicates: find possible duplicate expense records
+- outstanding_commitments: list unpaid or unresolved recurring commitments
+- close_monthly_budget: prepare a confirmed action to close the selected monthly budget; use only when the user explicitly asks to close it
 
 If the question is ambiguous, choose the closest safe operation, lower confidence, and provide a concise clarification. Use a result limit from 1 to 12.
 
