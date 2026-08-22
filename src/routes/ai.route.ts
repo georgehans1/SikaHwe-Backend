@@ -57,7 +57,10 @@ export async function registerAIRoutes(
       ...input,
       question: redactSensitiveText(input.question),
       scopeTitle: redactSensitiveText(input.scopeTitle),
-      availableCategories: input.availableCategories.map(redactSensitiveText)
+      availableCategories: input.availableCategories.map(redactSensitiveText),
+      ...(input.previousQuestion
+        ? { previousQuestion: redactSensitiveText(input.previousQuestion) }
+        : {})
     })
     return { success: true, data }
   })

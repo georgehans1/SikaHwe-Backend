@@ -123,7 +123,10 @@ export const askInterpretRequestSchema = z.object({
   scopeTitle: z.string().trim().min(1).max(160),
   planType: z.enum(['monthly', 'annual', 'project', 'all_data', 'unknown']),
   availableCategories: z.array(z.string().trim().min(1).max(100)).max(100),
-  supportedOperations: z.array(askOperationSchema).min(1).max(20)
+  supportedOperations: z.array(askOperationSchema).min(1).max(20),
+  currentDate: z.coerce.date(),
+  timeZoneIdentifier: z.string().trim().min(1).max(100),
+  previousQuestion: z.string().trim().min(2).max(500).optional()
 })
 
 export const askInterpretResponseSchema = z.object({
@@ -131,9 +134,19 @@ export const askInterpretResponseSchema = z.object({
   searchTerm: z.string().trim().min(1).max(200).optional(),
   limit: z.number().int().min(1).max(12).default(5),
   confidence: z.number().min(0).max(1),
-  clarification: z.string().trim().min(1).max(240).optional()
+  clarification: z.string().trim().min(1).max(240).optional(),
+  dateStart: z.coerce.date().optional(),
+  dateEndExclusive: z.coerce.date().optional(),
+  minimumAmountMinor: moneyMinor.optional(),
+  maximumAmountMinor: moneyMinor.optional(),
+  categoryName: z.string().trim().min(1).max(100).optional(),
+  merchantName: z.string().trim().min(1).max(200).optional(),
+  sourceName: z.string().trim().min(1).max(100).optional()
 }).superRefine((value, context) => {
-  if (value.operation === 'find_transactions' && !value.searchTerm) {
+  const hasFilter = value.searchTerm || value.dateStart || value.dateEndExclusive ||
+    value.minimumAmountMinor !== undefined || value.maximumAmountMinor !== undefined ||
+    value.categoryName || value.merchantName || value.sourceName
+  if (value.operation === 'find_transactions' && !hasFilter) {
     context.addIssue({
       code: 'custom',
       path: ['searchTerm'],

@@ -186,7 +186,7 @@ Operation guidance:
 - categories_over_allocation: monthly categories above allocation
 - largest_expenses: largest individual transactions
 - repeated_merchants: merchants paid more than once
-- find_transactions: locate a named merchant, purchase, category, or text; include a concise searchTerm
+- find_transactions: locate transactions using any combination of text, merchant, category, source, amount range, or date range. Use searchTerm only for genuine free-text matching.
 - compare_previous_budget: compare the selected monthly budget with the previous monthly plan
 - explain_available_to_allocate: explain the monthly planning buffer
 - remaining_budget: total budget minus actual spending for the selected monthly plan
@@ -199,6 +199,7 @@ Operation guidance:
 - close_monthly_budget: prepare a confirmed action to close the selected monthly budget; use only when the user explicitly asks to close it
 
 If the question is ambiguous, choose the closest safe operation, lower confidence, and provide a concise clarification. Use a result limit from 1 to 12.
+Resolve relative dates such as today, yesterday, last Friday, or 14 August using currentDate and timeZoneIdentifier. Return dateStart inclusive and dateEndExclusive exclusive as ISO 8601 instants. Use previousQuestion only to understand a direct follow-up; never copy its filters unless the new question refers to them.
 
 DATA:
 ${JSON.stringify(request)}`,
@@ -212,7 +213,14 @@ ${JSON.stringify(request)}`,
           searchTerm: { type: 'string' },
           limit: { type: 'integer', minimum: 1, maximum: 12 },
           confidence: { type: 'number', minimum: 0, maximum: 1 },
-          clarification: { type: 'string' }
+          clarification: { type: 'string' },
+          dateStart: { type: 'string' },
+          dateEndExclusive: { type: 'string' },
+          minimumAmountMinor: { type: 'integer', minimum: 0 },
+          maximumAmountMinor: { type: 'integer', minimum: 0 },
+          categoryName: { type: 'string' },
+          merchantName: { type: 'string' },
+          sourceName: { type: 'string' }
         },
         required: ['operation', 'limit', 'confidence']
       },
